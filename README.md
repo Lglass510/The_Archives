@@ -23,3 +23,7 @@ Do not store passwords, private keys, tokens, unredacted logs, or other sensitiv
 The Archives will grow from a collection of retained artifacts into a deliberate evidence system for The Realm. Future improvements may include consistent naming, repository and date metadata, links back to the originating work, and clear separation between current evidence and historical material.
 
 The Archives records the journey; it does not replace the documentation, configuration, or operational ownership held by the other repositories.
+
+## Current Records
+
+- [The Realm Audit - 2026-09-12](realm-audit-2026-09-12.md) - cross-repository inventory, lessons learned, evidence register, security findings, and next actions.
