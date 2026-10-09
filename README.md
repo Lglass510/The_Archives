@@ -29,6 +29,14 @@ Reference sheets built from commands that were actually run in the labs, with li
 | [Networking](notes/networking.md) | Lab addressing, layer-by-layer troubleshooting, Hyper-V NAT, Windows DNS, Azure network rules |
 | [Linux](notes/linux.md) | `ip` commands, Netplan, SSH between Linux and a Windows DC |
 
+## Exam prep
+
+| Item | What's in it |
+| --- | --- |
+| [AZ-104 practice exam](exam-prep/viewer/az104-exam-viewer.html) | 200 original questions in 4 timed 50-question tests, mapped to the April 17, 2026 skills outline, with explanations, Microsoft Learn references, and confidence scores. Download and open in a browser. |
+
+The bank source and build script are in `exam-prep/temp/`. Rebuild with `python temp/build_az104.py --check-links` from `exam-prep/`. Don't edit the generated HTML.
+
 ## The Realm
 
 | Repository | Role | Highlight |
@@ -53,4 +61,5 @@ Anything added here follows these rules:
 | --- | --- |
 | `audits/` | Dated cross-repository audits |
 | `notes/` | Reference sheets by topic |
+| `exam-prep/` | Certification practice exams: generated viewer in `viewer/`, question bank and build script in `temp/` |
 | root | Lessons learned, timeline, this index |

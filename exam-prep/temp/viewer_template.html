@@ -1,0 +1,557 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AZ-104 Practice Exam</title>
+<meta name="description" content="Original AZ-104 practice questions in an exam-style viewer: timer, item navigator, flag for review, and source-backed explanations.">
+<style>
+:root{
+  --bar:#13294b; --bar-2:#1d3a66; --bar-ink:#ffffff;
+  --tool:#e8edf4; --tool-line:#c9d3e0;
+  --page:#f3f5f8; --card:#ffffff; --ink:#1b2430; --muted:#5a6676; --line:#d8dee7;
+  --accent:#1f5fbf; --accent-soft:#e6efff; --accent-ink:#ffffff;
+  --ok:#1e7e34; --ok-soft:#e5f4e8; --bad:#c62828; --bad-soft:#fdecec;
+  --flag:#b26a00; --flag-soft:#fff3df;
+  --hi:#1e7e34; --med:#9a6700; --lo:#c62828;
+  --radius:12px; --tap:44px;
+  --shadow:0 1px 2px rgba(16,24,40,.06),0 2px 8px rgba(16,24,40,.06);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;display:flex;flex-direction:column;min-height:100vh;min-height:100dvh;background:var(--page);color:var(--ink);font:16px/1.55 "Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;overflow-x:hidden}
+button,select,input{font:inherit;color:inherit}
+a{color:var(--accent)}
+pre{background:#0f1b2d;color:#e6edf6;padding:12px 14px;border-radius:8px;overflow-x:auto;font:13.5px/1.5 Consolas,"Cascadia Mono",monospace;max-width:100%}
+code{font-family:Consolas,"Cascadia Mono",monospace;font-size:.92em}
+p code,li code,.stem code:not(pre code){background:#eef2f7;padding:1px 5px;border-radius:4px;overflow-wrap:anywhere;word-break:break-word}
+img{max-width:100%;height:auto}
+[hidden]{display:none!important}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ---------- exam bar ---------- */
+.exambar{position:sticky;top:0;z-index:30;background:var(--bar);color:var(--bar-ink);box-shadow:0 2px 6px rgba(0,0,0,.25)}
+.exambar .row{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding:8px 16px}
+.brand{font-weight:600;font-size:15px;line-height:1.25;flex:1 1 180px;min-width:0}
+.brand small{display:none;font-weight:400;opacity:.75;font-size:12px}
+.brand .long{display:none}
+.testpick{display:flex;align-items:center;gap:6px}
+.testpick label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.testpick select{min-height:36px;border-radius:6px;border:1px solid #4b6797;background:var(--bar-2);color:#fff;padding:4px 8px}
+.counter{display:none;font-size:14px;white-space:nowrap}
+.timer{display:flex;align-items:center;gap:6px;font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap;margin-left:auto}
+.timer svg{width:18px;height:18px}
+.timer.warn{color:#ffd166}
+.timer .pause{min-height:32px;min-width:32px;border-radius:6px;border:1px solid #4b6797;background:transparent;color:#fff;cursor:pointer;padding:0 8px;font-size:13px}
+
+/* ---------- toolbar ---------- */
+.toolbar{position:static;z-index:20;background:var(--tool);border-bottom:1px solid var(--tool-line)}
+.toolbar .row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 16px}
+.btn{min-height:var(--tap);padding:0 14px;border-radius:8px;border:1px solid var(--tool-line);background:#fff;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;font-weight:600;font-size:15px}
+.btn:hover:not(:disabled){border-color:var(--accent)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.flagbtn[aria-pressed="true"]{background:var(--flag-soft);border-color:var(--flag);color:var(--flag)}
+.btn.end{background:#fff;border-color:var(--bar);color:var(--bar)}
+.btn svg{width:18px;height:18px}
+.jump{display:flex;align-items:center;gap:6px;font-size:14px}
+.jump input{width:64px;min-height:var(--tap);border:1px solid var(--tool-line);border-radius:8px;padding:0 8px;text-align:center}
+.spacer{flex:1 1 0}
+.hide-sm{display:none}
+#prevTop,#nextTop{display:none}
+.flagbtn .short{display:inline}.flagbtn .full{display:none}
+
+/* ---------- layout ---------- */
+.layout{flex:1 0 auto;width:100%;max-width:1280px;margin:0 auto;padding:16px;display:grid;grid-template-columns:minmax(0,1fr);gap:16px}
+.q{display:none;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 16px 20px;min-width:0}
+.q.active{display:block}
+.qhead{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+.qnum{font-weight:700;font-size:17px;margin-right:4px}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:12.5px;line-height:1;padding:6px 9px;border-radius:999px;border:1px solid var(--line);background:#f7f9fc;color:var(--muted);max-width:100%}
+.chip.type{background:var(--accent-soft);border-color:#c7d8f6;color:#1a4a94}
+.chip.conf.High{color:var(--hi);border-color:#b7dcc0;background:var(--ok-soft)}
+.chip.conf.Medium{color:var(--med);border-color:#ecd59a;background:#fff8e6}
+.chip.conf.Low{color:var(--lo);border-color:#f2b8b8;background:var(--bad-soft);font-weight:700}
+.chip.flagged{color:var(--flag);border-color:var(--flag);background:var(--flag-soft)}
+.objective{font-size:13px;color:var(--muted);margin:0 0 12px}
+details.case{border:1px solid var(--line);border-radius:10px;background:#f8fafc;margin:0 0 14px}
+details.case>summary{cursor:pointer;min-height:var(--tap);display:flex;align-items:center;padding:0 14px;font-weight:600;color:#1a4a94}
+details.case>div{padding:4px 16px 12px;font-size:15px}
+details.case table{border-collapse:collapse;width:100%;font-size:14px;display:block;overflow-x:auto}
+details.case th,details.case td{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+.stem{font-size:16.5px;margin:0 0 10px}
+.stem p{margin:0 0 10px}
+.instr{font-size:14px;color:var(--muted);font-style:italic;margin:0 0 12px}
+.lowwarn{font-size:13.5px;color:var(--lo);background:var(--bad-soft);border:1px solid #f2b8b8;border-radius:8px;padding:8px 10px;margin:0 0 12px}
+
+/* ---------- options ---------- */
+.options{display:grid;gap:10px;margin:0 0 14px}
+.option{display:flex;gap:12px;align-items:flex-start;min-height:var(--tap);padding:11px 14px;border:1.5px solid var(--line);border-radius:10px;background:#fff;cursor:pointer;user-select:none;overflow-wrap:anywhere}
+.option:hover{border-color:#9fb6da}
+.option:focus-visible,.btn:focus-visible,select:focus-visible,summary:focus-visible,.pal button:focus-visible,input:focus-visible{outline:3px solid #7aa7ff;outline-offset:2px}
+.marker{flex:0 0 20px;width:20px;height:20px;border:2px solid #8a97a8;border-radius:50%;margin-top:2px;display:grid;place-items:center;background:#fff}
+.options.multi .marker{border-radius:4px}
+.option .L{font-weight:700;min-width:1.4em}
+.option .txt{flex:1;min-width:0}
+.option.selected{border-color:var(--accent);background:var(--accent-soft)}
+.option.selected .marker{border-color:var(--accent);background:var(--accent)}
+.option.selected .marker::after{content:"";width:8px;height:8px;border-radius:50%;background:#fff}
+.options.multi .option.selected .marker::after{width:10px;height:6px;border-radius:0;background:none;border:solid #fff;border-width:0 0 2.5px 2.5px;transform:rotate(-45deg) translate(1px,-1px)}
+.revealed .option.correct{border-color:var(--ok);background:var(--ok-soft)}
+.revealed .option.correct .marker{border-color:var(--ok)}
+.revealed .option.correct.selected .marker{background:var(--ok)}
+.revealed .option.selected:not(.correct){border-color:var(--bad);background:var(--bad-soft)}
+.revealed .option.selected:not(.correct) .marker{border-color:var(--bad);background:var(--bad)}
+.verdict{display:none;margin-left:auto;font-size:12.5px;font-weight:700;white-space:nowrap}
+.revealed .option.correct .verdict.okv{display:inline;color:var(--ok)}
+.revealed .option.selected:not(.correct) .verdict.badv{display:inline;color:var(--bad)}
+
+/* hotspot / drag-drop rows */
+.hrows{display:grid;gap:10px;margin:0 0 14px}
+.hrow{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;padding:12px 14px;border:1.5px solid var(--line);border-radius:10px;background:#fff}
+.hrow .hl{font-size:15.5px;overflow-wrap:anywhere}
+.hrow select{min-height:var(--tap);width:100%;max-width:100%;border:1.5px solid #8a97a8;border-radius:8px;padding:0 10px;background:#fff}
+.hrow .mark{display:none;font-weight:700;font-size:13px}
+.revealed .hrow.ok{border-color:var(--ok);background:var(--ok-soft)}
+.revealed .hrow.bad{border-color:var(--bad);background:var(--bad-soft)}
+.revealed .hrow .mark{display:block}
+.revealed .hrow.ok .mark{color:var(--ok)}
+.revealed .hrow.bad .mark{color:var(--bad)}
+
+/* reveal */
+.showbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:4px 0 12px}
+.answer-line{display:none;font-weight:600;padding:10px 12px;border-radius:8px;background:var(--ok-soft);border:1px solid #b7dcc0;color:#13502a;overflow-wrap:anywhere}
+.revealed .answer-line{display:block}
+details.explanation{display:none;border-top:1px solid var(--line);margin-top:12px;padding-top:8px}
+.revealed details.explanation{display:block}
+details.explanation>summary{cursor:pointer;font-weight:700;min-height:var(--tap);display:flex;align-items:center}
+.expl{font-size:15.5px;overflow-wrap:anywhere}
+.expl ul{padding-left:20px;margin:6px 0 12px}
+.expl li{margin:4px 0}
+.expl .note{background:#f2f6fc;border-left:4px solid var(--accent);padding:8px 10px;border-radius:4px}
+.expl .conf-note{background:#fff8e6;border-left:4px solid var(--med);padding:8px 10px;border-radius:4px}
+
+/* ---------- palette ---------- */
+.palette{display:none;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px}
+.palette.open{display:block}
+.palette h2{font-size:15px;margin:0 0 10px;display:flex;justify-content:space-between;align-items:center}
+.pal{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:6px}
+.pal button{position:relative;min-height:var(--tap);border-radius:8px;border:1.5px solid #9aa7b8;background:#fff;cursor:pointer;font-weight:600;font-variant-numeric:tabular-nums}
+.pal button.answered{background:#dfe8f7;border-color:#7d9bd0}
+.pal button.flagged::after{content:"";position:absolute;top:3px;right:3px;width:0;height:0;border-left:9px solid transparent;border-top:9px solid var(--flag)}
+.pal button.current{outline:3px solid var(--accent);outline-offset:1px}
+.pal button.res-ok{background:var(--ok-soft);border-color:var(--ok)}
+.pal button.res-bad{background:var(--bad-soft);border-color:var(--bad)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:12.5px;color:var(--muted);margin-top:12px}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.sw{width:14px;height:14px;border-radius:3px;border:1.5px solid #9aa7b8;display:inline-block;background:#fff}
+.sw.a{background:#dfe8f7;border-color:#7d9bd0}
+.sw.f{background:linear-gradient(225deg,var(--flag) 40%,#fff 41%)}
+.palstats{font-size:13px;color:var(--muted);margin:10px 0 0}
+
+/* ---------- bottom nav ---------- */
+.bottomnav{position:sticky;bottom:0;z-index:20;background:var(--tool);border-top:1px solid var(--tool-line)}
+.bottomnav .row{max-width:1280px;margin:0 auto;display:flex;gap:8px;padding:8px 16px}
+.bottomnav .btn{flex:1 1 0}
+.bottomnav .btn.icon{flex:0 0 52px;padding:0}
+.bottomnav .btn.icon span{display:none}
+.bottomnav .btn svg{width:20px;height:20px}
+
+/* ---------- review ---------- */
+.overlay{position:fixed;inset:0;z-index:50;background:rgba(10,20,35,.55);display:none;align-items:flex-start;justify-content:center;padding:16px;overflow-y:auto}
+.overlay.open{display:flex}
+.panel{background:#fff;border-radius:14px;width:100%;max-width:860px;padding:20px 16px;box-shadow:0 10px 40px rgba(0,0,0,.3)}
+.panel h2{margin:0 0 4px;font-size:21px}
+.panel .sub{color:var(--muted);font-size:14px;margin:0 0 14px}
+.score{display:flex;flex-wrap:wrap;gap:12px;margin:0 0 16px}
+.tile{flex:1 1 140px;border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.tile b{display:block;font-size:24px;font-variant-numeric:tabular-nums}
+.tile span{font-size:13px;color:var(--muted)}
+.dom{width:100%;border-collapse:collapse;font-size:14px;margin:0 0 16px}
+.dom th,.dom td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+.dom td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.bar{height:8px;border-radius:4px;background:#e6ebf2;overflow:hidden;min-width:60px}
+.bar i{display:block;height:100%;background:var(--accent)}
+.lists h3{font-size:15px;margin:14px 0 6px}
+.jl{display:flex;flex-wrap:wrap;gap:6px}
+.jl button{min-height:var(--tap);min-width:var(--tap);border-radius:8px;border:1.5px solid var(--line);background:#fff;cursor:pointer;font-weight:600}
+.jl.bad button{border-color:#f2b8b8;background:var(--bad-soft)}
+.jl.flag button{border-color:var(--flag);background:var(--flag-soft)}
+.panel .actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+.banner{background:var(--flag-soft);border:1px solid var(--flag);color:#7a4a00;padding:8px 12px;border-radius:8px;margin:0 0 12px;font-weight:600}
+.disclaimer{font-size:12.5px;color:var(--muted);margin:14px 0 0}
+.paused-veil{position:fixed;inset:0;z-index:40;background:rgba(19,41,75,.92);color:#fff;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;text-align:center;padding:20px}
+.paused-veil.open{display:flex}
+
+/* ---------- breakpoints ---------- */
+@media (min-width:600px){
+  .hide-sm{display:inline}
+  .brand small,.brand .long{display:block}
+  .brand .short{display:none}
+  .counter{display:block}
+  .testpick label{position:static;width:auto;height:auto;overflow:visible;clip:auto;font-size:13px;opacity:.85}
+  .toolbar{position:sticky}
+  #prevTop,#nextTop{display:inline-flex}
+  .flagbtn .short{display:none}.flagbtn .full{display:inline}
+  .bottomnav .btn.icon{flex:1 1 0;padding:0 14px}
+  .bottomnav .btn.icon span{display:inline}
+  .hrow{grid-template-columns:minmax(0,1fr) minmax(180px,40%);align-items:center}
+  .hrow .mark{grid-column:1 / -1}
+  .q{padding:22px 24px 24px}
+  .panel{padding:24px}
+}
+@media (min-width:1024px){
+  .layout{grid-template-columns:minmax(0,1fr) 300px;align-items:start}
+  .palette{display:block;position:sticky;top:var(--stick,120px)}
+  .palette.closed{display:none}
+  .layout.nopal{grid-template-columns:minmax(0,1fr)}
+  .palclose{display:none}
+  #palBot{display:none}
+}
+@media (max-width:1023.98px){
+  .palette.open{position:fixed;left:8px;right:8px;bottom:68px;max-height:70vh;overflow-y:auto;z-index:35;box-shadow:0 10px 30px rgba(0,0,0,.3)}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
+@media (prefers-reduced-motion:no-preference){.option,.btn,.hrow{transition:border-color .15s,background-color .15s}}
+</style>
+</head>
+<body>
+<header class="exambar" id="exambar">
+  <div class="row">
+    <div class="brand"><span class="long">AZ-104 Microsoft Azure Administrator</span><span class="short">AZ-104 Practice Exam</span><small>Practice exam · original questions · not affiliated with Microsoft or Pearson VUE</small></div>
+    <div class="testpick"><label for="testSel">Test</label><select id="testSel"></select></div>
+    <div class="counter" id="counter" aria-live="polite">Item 1 of 50</div>
+    <div class="timer" id="timer" title="Time remaining">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6"/></svg>
+      <span class="sr">Time remaining</span><span id="clock">01:40:00</span>
+      <button class="pause" id="pauseBtn" type="button" aria-label="Pause timer">Pause</button>
+    </div>
+  </div>
+</header>
+<nav class="toolbar" id="toolbar" aria-label="Exam controls">
+  <div class="row">
+    <button class="btn" id="prevTop" type="button" aria-label="Previous question"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg><span class="hide-sm">Previous</span></button>
+    <div class="jump"><span>Question</span><input id="jumpIn" type="number" inputmode="numeric" min="1" value="1" aria-label="Jump to question number"><span id="ofN">of 50</span><button class="btn" id="goBtn" type="button">Go</button></div>
+    <button class="btn" id="nextTop" type="button" aria-label="Next question"><span class="hide-sm">Next</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+    <span class="spacer"></span>
+    <button class="btn flagbtn" id="flagBtn" type="button" aria-pressed="false"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5 21V4h11l-1.5 4L16 12H7v9z"/></svg><span class="lbl"><span class="full">Flag for review</span><span class="short">Flag</span></span></button>
+    <button class="btn" id="palBtn" type="button" aria-controls="palette" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg><span>Navigator</span></button>
+    <button class="btn end" id="endBtn" type="button">End / Review</button>
+  </div>
+</nav>
+
+<div class="layout" id="layout">
+  <main id="stage" aria-live="polite"></main>
+  <aside class="palette" id="palette" aria-label="Item navigator">
+    <h2><span>Item navigator</span><button class="btn palclose" id="palClose" type="button" aria-label="Close navigator">Close</button></h2>
+    <div class="pal" id="pal"></div>
+    <div class="legend"><span><i class="sw"></i>Unanswered</span><span><i class="sw a"></i>Answered</span><span><i class="sw f"></i>Flagged</span></div>
+    <p class="palstats" id="palStats"></p>
+  </aside>
+</div>
+
+<div class="bottomnav">
+  <div class="row">
+    <button class="btn icon" id="prevBot" type="button" aria-label="Previous question"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg><span>Previous</span></button>
+    <button class="btn primary" id="showBot" type="button">Show answer</button>
+    <button class="btn icon" id="nextBot" type="button" aria-label="Next question"><span>Next</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+    <button class="btn icon" id="palBot" type="button" aria-controls="palette" aria-label="Item navigator"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg><span>Items</span></button>
+  </div>
+</div>
+
+<div class="overlay" id="review" role="dialog" aria-modal="true" aria-labelledby="revTitle">
+  <div class="panel" id="revPanel"></div>
+</div>
+<div class="paused-veil" id="veil"><h2>Exam paused</h2><p>The timer is stopped and questions are hidden.</p><button class="btn primary" id="resumeBtn" type="button">Resume</button></div>
+
+<script>
+const DATA = /*__DATA__*/null;
+(function(){
+"use strict";
+const $ = s => document.querySelector(s);
+const STORE = "az104-viewer-v1";
+const byTest = {};
+DATA.items.forEach(q => (byTest[q.test] = byTest[q.test] || []).push(q));
+const testNos = Object.keys(byTest).map(Number).sort((a,b)=>a-b);
+
+let state = {};
+try { state = JSON.parse(localStorage.getItem(STORE) || "{}") || {}; } catch(e) { state = {}; }
+if (!state.tests) state.tests = {};
+function T(t){ t = t || cur.test;
+  if (!state.tests[t]) state.tests[t] = {sel:{}, flags:{}, rev:{}, idx:0, remaining: byTest[t].length * DATA.secondsPerItem, ended:false};
+  return state.tests[t]; }
+function save(){ try { localStorage.setItem(STORE, JSON.stringify(state)); } catch(e) {} }
+
+const cur = {test: state.lastTest && byTest[state.lastTest] ? state.lastTest : testNos[0], paused:false};
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+/* ---------- render ---------- */
+const TYPE_LABEL = {mc:"Single answer", multi:"Multiple answer", hotspot:"Hotspot", dragdrop:"Drag and drop", yesno:"Yes / No"};
+function render(){
+  const items = byTest[cur.test];
+  const st = T();
+  const stage = $("#stage");
+  stage.innerHTML = items.map(q => {
+    const tl = q.yesno ? TYPE_LABEL.yesno : TYPE_LABEL[q.type];
+    const cs = q.case ? DATA.cases[q.case] : null;
+    let body = "";
+    if (q.options){
+      const multi = q.type === "multi";
+      body = `<div class="options${multi?" multi":""}" role="${multi?"group":"radiogroup"}" aria-label="Answer options">` +
+        q.options.map(o => `<div class="option${q.answer.includes(o.L)?" correct":""}" role="${multi?"checkbox":"radio"}" tabindex="0" aria-checked="false" data-l="${o.L}"><span class="marker" aria-hidden="true"></span><span class="L">${o.L}.</span><span class="txt">${esc(o.text)}</span><span class="verdict okv">Correct</span><span class="verdict badv">Your pick</span></div>`).join("") + `</div>`;
+    } else {
+      body = `<div class="hrows">` + q.rows.map((r,i) => `<div class="hrow" data-i="${i}"><div class="hl" id="hl-${q.id}-${i}">${esc(r.label)}</div><select aria-labelledby="hl-${q.id}-${i}"><option value="">Select…</option>${r.values.map(v=>`<option>${esc(v)}</option>`).join("")}</select><div class="mark"></div></div>`).join("") + `</div>`;
+    }
+    const low = q.conf.label === "Low" ? `<p class="lowwarn">⚠ Low-confidence item: treat the keyed answer with caution and check the explanation's caveat.</p>` : "";
+    return `<section class="q" id="q-${q.id}" data-id="${q.id}" aria-label="Question ${q.n}">
+      <div class="qhead"><span class="qnum">Question ${q.n}</span><span class="chip type">${tl}</span><span class="chip conf ${q.conf.label}" title="Data confidence for the keyed answer">Confidence: ${q.conf.score}% · ${q.conf.label}</span><span class="chip flagged" hidden>⚑ Flagged</span></div>
+      <p class="objective">${esc(q.domainName)} › ${esc(q.objective)}</p>
+      ${cs ? `<details class="case"><summary>Case study: ${esc(cs.name)}</summary><div>${cs.html}</div></details>` : ""}
+      <div class="stem">${q.stem || "Read case study for question."}</div>
+      <p class="instr">${esc(q.instr)}</p>
+      ${low}${body}
+      <div class="showbar"><button class="btn primary showbtn" type="button">Show answer</button></div>
+      <div class="answer-line">Answer: ${q.answerText}</div>
+      <details class="explanation" open><summary>Explanation</summary><div class="expl">${q.expl}</div></details>
+    </section>`;
+  }).join("");
+
+  // restore selections
+  items.forEach(q => applyState(q));
+  $("#testSel").value = String(cur.test);
+  renderPalette();
+  go(st.idx, false);
+  tick(true);
+}
+
+function sec(q){ return document.getElementById("q-" + q.id); }
+
+function applyState(q){
+  const st = T(), el = sec(q), sel = st.sel[q.id];
+  if (q.options){
+    el.querySelectorAll(".option").forEach(o => {
+      const on = !!(sel && sel.includes(o.dataset.l));
+      o.classList.toggle("selected", on); o.setAttribute("aria-checked", on);
+    });
+  } else {
+    el.querySelectorAll(".hrow").forEach((r,i) => { r.querySelector("select").value = (sel && sel[i]) || ""; });
+  }
+  setRevealed(q, !!st.rev[q.id], false);
+  el.querySelector(".chip.flagged").hidden = !st.flags[q.id];
+}
+
+function setRevealed(q, on, persist=true){
+  const st = T(), el = sec(q);
+  el.classList.toggle("revealed", on);
+  el.querySelector(".showbtn").textContent = on ? "Hide answer" : "Show answer";
+  if (q.rows) markRows(q);
+  if (persist){ if (on) st.rev[q.id] = 1; else delete st.rev[q.id]; save(); }
+  if (q === active()) $("#showBot").textContent = on ? "Hide answer" : "Show answer";
+}
+
+function markRows(q){
+  const sel = T().sel[q.id] || [];
+  sec(q).querySelectorAll(".hrow").forEach((r,i) => {
+    const ok = sel[i] === q.rows[i].answer;
+    r.classList.toggle("ok", ok); r.classList.toggle("bad", !ok);
+    r.querySelector(".mark").textContent = ok ? "✓ Correct" : `✗ Correct answer: ${q.rows[i].answer}`;
+  });
+}
+
+/* ---------- grading ---------- */
+function answered(q){
+  const s = T().sel[q.id];
+  if (!s) return false;
+  return q.options ? s.length > 0 : q.rows.every((_,i) => s[i]);
+}
+function correct(q){
+  const s = T().sel[q.id];
+  if (!s) return false;
+  if (q.options) return s.length === q.answer.length && q.answer.every(L => s.includes(L));
+  return q.rows.every((r,i) => s[i] === r.answer);
+}
+
+/* ---------- navigation ---------- */
+function active(){ return byTest[cur.test][T().idx]; }
+function go(i, scroll=true){
+  const items = byTest[cur.test], st = T();
+  i = Math.max(0, Math.min(items.length - 1, i));
+  document.querySelectorAll(".q.active").forEach(e => e.classList.remove("active"));
+  st.idx = i; save();
+  const q = items[i];
+  sec(q).classList.add("active");
+  $("#counter").textContent = `Item ${i+1} of ${items.length}`;
+  $("#jumpIn").value = i + 1; $("#jumpIn").max = items.length;
+  $("#ofN").textContent = `of ${items.length}`;
+  ["#prevTop","#prevBot"].forEach(s => $(s).disabled = i === 0);
+  ["#nextTop","#nextBot"].forEach(s => $(s).disabled = i === items.length - 1);
+  const f = !!st.flags[q.id];
+  $("#flagBtn").setAttribute("aria-pressed", f);
+  $("#flagBtn .full").textContent = f ? "Flagged" : "Flag for review";
+  $("#flagBtn .short").textContent = f ? "Flagged" : "Flag";
+  $("#showBot").textContent = st.rev[q.id] ? "Hide answer" : "Show answer";
+  renderPalette();
+  if (scroll) window.scrollTo({top:0, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"});
+}
+
+function renderPalette(){
+  const st = T(), items = byTest[cur.test];
+  $("#pal").innerHTML = items.map((q,i) => {
+    const c = [answered(q) ? "answered" : "", st.flags[q.id] ? "flagged" : "", i === st.idx ? "current" : "",
+      st.ended ? (correct(q) ? "res-ok" : "res-bad") : ""].join(" ");
+    const lab = `Question ${i+1}${answered(q) ? ", answered" : ", unanswered"}${st.flags[q.id] ? ", flagged" : ""}`;
+    return `<button type="button" class="${c}" data-i="${i}" aria-label="${lab}"${i===st.idx?' aria-current="true"':""}>${i+1}</button>`;
+  }).join("");
+  const a = items.filter(answered).length, f = items.filter(q => st.flags[q.id]).length;
+  $("#palStats").textContent = `${a} answered · ${items.length - a} unanswered · ${f} flagged`;
+}
+
+/* ---------- interactions ---------- */
+function choose(optEl){
+  const secEl = optEl.closest(".q"), q = DATA.items.find(x => x.id == secEl.dataset.id), st = T();
+  const L = optEl.dataset.l;
+  let s = st.sel[q.id] ? st.sel[q.id].slice() : [];
+  if (q.type === "multi") s = s.includes(L) ? s.filter(x => x !== L) : s.concat(L).sort();
+  else s = [L];
+  if (s.length) st.sel[q.id] = s; else delete st.sel[q.id];
+  save(); applyState(q); renderPalette();
+}
+
+$("#stage").addEventListener("click", e => {
+  const opt = e.target.closest(".option");
+  if (opt) return choose(opt);
+  const sb = e.target.closest(".showbtn");
+  if (sb){ const q = DATA.items.find(x => x.id == sb.closest(".q").dataset.id); setRevealed(q, !sec(q).classList.contains("revealed")); }
+});
+$("#stage").addEventListener("keydown", e => {
+  const opt = e.target.closest && e.target.closest(".option");
+  if (opt && (e.key === " " || e.key === "Enter")){ e.preventDefault(); choose(opt); }
+});
+$("#stage").addEventListener("change", e => {
+  if (e.target.tagName !== "SELECT") return;
+  const secEl = e.target.closest(".q"), q = DATA.items.find(x => x.id == secEl.dataset.id), st = T();
+  const s = (st.sel[q.id] || q.rows.map(()=>"")).slice();
+  s[+e.target.closest(".hrow").dataset.i] = e.target.value;
+  if (s.some(Boolean)) st.sel[q.id] = s; else delete st.sel[q.id];
+  save(); if (secEl.classList.contains("revealed")) markRows(q); renderPalette();
+});
+
+["#prevTop","#prevBot"].forEach(s => $(s).addEventListener("click", () => go(T().idx - 1)));
+["#nextTop","#nextBot"].forEach(s => $(s).addEventListener("click", () => go(T().idx + 1)));
+$("#goBtn").addEventListener("click", () => go((parseInt($("#jumpIn").value,10)||1) - 1));
+$("#jumpIn").addEventListener("keydown", e => { if (e.key === "Enter") go((parseInt(e.target.value,10)||1) - 1); });
+$("#showBot").addEventListener("click", () => { const q = active(); setRevealed(q, !sec(q).classList.contains("revealed")); });
+$("#flagBtn").addEventListener("click", () => {
+  const q = active(), st = T();
+  if (st.flags[q.id]) delete st.flags[q.id]; else st.flags[q.id] = 1;
+  save(); applyState(q); go(st.idx, false);
+});
+$("#pal").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; go(+b.dataset.i); if (matchMedia("(max-width:1023.98px)").matches) togglePal(false); });
+
+function togglePal(force){
+  const p = $("#palette"), wide = matchMedia("(min-width:1024px)").matches;
+  if (wide){
+    const closed = force === undefined ? !p.classList.contains("closed") : !force;
+    p.classList.toggle("closed", closed); $("#layout").classList.toggle("nopal", closed);
+    $("#palBtn").setAttribute("aria-expanded", !closed);
+  } else {
+    const open = force === undefined ? !p.classList.contains("open") : force;
+    p.classList.toggle("open", open); $("#palBtn").setAttribute("aria-expanded", open);
+  }
+}
+$("#palBtn").addEventListener("click", () => togglePal());
+$("#palBot").addEventListener("click", () => togglePal());
+$("#palClose").addEventListener("click", () => togglePal(false));
+
+document.addEventListener("keydown", e => {
+  if ($("#review").classList.contains("open") || cur.paused) { if (e.key === "Escape") closeReview(); return; }
+  const t = e.target, tag = t.tagName;
+  if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA" || t.isContentEditable) return;
+  if (e.altKey || e.ctrlKey || e.metaKey) return;
+  if (e.key === "ArrowLeft"){ e.preventDefault(); go(T().idx - 1); }
+  if (e.key === "ArrowRight"){ e.preventDefault(); go(T().idx + 1); }
+});
+
+$("#testSel").innerHTML = testNos.map(t => `<option value="${t}">Test ${t} (${byTest[t].length} items)</option>`).join("");
+$("#testSel").addEventListener("change", e => { cur.test = +e.target.value; state.lastTest = cur.test; save(); render(); });
+
+/* ---------- timer ---------- */
+function fmt(s){ s = Math.max(0, s|0); const h = s/3600|0, m = (s%3600)/60|0, x = s%60; return [h,m,x].map(n => String(n).padStart(2,"0")).join(":"); }
+function tick(drawOnly){
+  const st = T();
+  if (!drawOnly && !cur.paused && !st.ended && st.remaining > 0 && !document.hidden){
+    st.remaining--; if (st.remaining % 15 === 0) save();
+    if (st.remaining === 0){ save(); openReview(true); }
+  }
+  $("#clock").textContent = fmt(st.remaining);
+  $("#timer").classList.toggle("warn", st.remaining <= 300);
+}
+setInterval(() => tick(false), 1000);
+function setPause(p){ cur.paused = p; $("#veil").classList.toggle("open", p); $("#pauseBtn").textContent = p ? "Resume" : "Pause"; save(); if (!p) $("#pauseBtn").focus(); }
+$("#pauseBtn").addEventListener("click", () => setPause(!cur.paused));
+$("#resumeBtn").addEventListener("click", () => setPause(false));
+
+/* ---------- review ---------- */
+function openReview(expired){
+  const st = T(), items = byTest[cur.test];
+  const ok = items.filter(correct), ans = items.filter(answered);
+  const wrong = items.filter(q => answered(q) && !correct(q)), un = items.filter(q => !answered(q)), fl = items.filter(q => st.flags[q.id]);
+  const pct = Math.round(ok.length / items.length * 100);
+  const doms = {};
+  items.forEach(q => { const d = doms[q.domain] = doms[q.domain] || {n:0, ok:0}; d.n++; if (correct(q)) d.ok++; });
+  const jl = (arr, cls) => arr.length ? `<div class="jl ${cls}">${arr.map(q => `<button type="button" data-i="${q.n-1}" aria-label="Go to question ${q.n}">${q.n}</button>`).join("")}</div>` : `<p class="sub">None.</p>`;
+  $("#revPanel").innerHTML = `
+    ${expired ? `<div class="banner">Time expired. Your answers are locked in for scoring; you can still browse and reveal explanations.</div>` : ""}
+    <h2 id="revTitle">Test ${cur.test} review</h2>
+    <p class="sub">${esc(DATA.exam)} · ${esc(DATA.outline)}</p>
+    <div class="score">
+      <div class="tile"><b>${pct}%</b><span>${ok.length} of ${items.length} correct</span></div>
+      <div class="tile"><b>${ans.length}</b><span>answered</span></div>
+      <div class="tile"><b>${fl.length}</b><span>flagged</span></div>
+      <div class="tile"><b>${fmt(st.remaining)}</b><span>time remaining</span></div>
+    </div>
+    <table class="dom"><thead><tr><th>Skill area</th><th class="n">Score</th><th style="width:30%">&nbsp;</th></tr></thead><tbody>
+      ${Object.keys(DATA.domains).filter(d => doms[d]).map(d => { const x = doms[d], p = Math.round(x.ok/x.n*100);
+        return `<tr><td>${esc(DATA.domains[d])}</td><td class="n">${x.ok}/${x.n} · ${p}%</td><td><div class="bar"><i style="width:${p}%"></i></div></td></tr>`; }).join("")}
+    </tbody></table>
+    <div class="lists">
+      <h3>Incorrect (${wrong.length})</h3>${jl(wrong, "bad")}
+      <h3>Unanswered (${un.length})</h3>${jl(un, "")}
+      <h3>Flagged for review (${fl.length})</h3>${jl(fl, "flag")}
+    </div>
+    <div class="actions">
+      <button class="btn primary" type="button" id="revBack">Return to questions</button>
+      <button class="btn" type="button" id="revMark">${st.ended ? "Hide results in navigator" : "Show results in navigator"}</button>
+      <button class="btn" type="button" id="revReset">Reset this test</button>
+    </div>
+    <p class="disclaimer">Practice percentage only. The real exam uses scaled scoring (700 of 1000 to pass), which is not the same as 70% correct. All items are original and do not reproduce live exam content.</p>`;
+  if (expired) { st.ended = true; save(); renderPalette(); }
+  $("#review").classList.add("open");
+  $("#revBack").focus();
+}
+function closeReview(){ $("#review").classList.remove("open"); }
+$("#endBtn").addEventListener("click", () => openReview(false));
+$("#review").addEventListener("click", e => {
+  if (e.target.id === "review" || e.target.id === "revBack") return closeReview();
+  if (e.target.id === "revMark"){ const st = T(); st.ended = !st.ended; save(); renderPalette(); return openReview(false); }
+  if (e.target.id === "revReset"){
+    if (!confirm(`Clear all answers, flags and the timer for Test ${cur.test}?`)) return;
+    delete state.tests[cur.test]; save(); closeReview(); render(); return;
+  }
+  const b = e.target.closest(".jl button");
+  if (b){ closeReview(); go(+b.dataset.i); }
+});
+
+/* sticky offsets so the toolbar sits under the exam bar on every width */
+function layoutSticky(){
+  const h = $("#exambar").offsetHeight;
+  $("#toolbar").style.top = h + "px";
+  document.documentElement.style.setProperty("--stick", (h + $("#toolbar").offsetHeight + 16) + "px");
+}
+addEventListener("resize", layoutSticky);
+layoutSticky();
+render();
+})();
+</script>
+</body>
+</html>
